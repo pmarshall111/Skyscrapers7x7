@@ -5,7 +5,10 @@ export class Solver {
     private numbBuildings: number;
     startTime: number;
     rules: number[];
+    permutationBuilder: Perms;
+    solution: Grid;
 
+    //for exceptionally big problems (7x7+), heap size may need to be increased.
     getBoard(clues: number[]) {
         this.startTime = new Date().getTime();
         this.rules = clues;
@@ -52,6 +55,53 @@ export class Solver {
             createdThisIteration = [];
         }
         return [];
+    }
+
+    //method uses recursive solution so the number of grids held in memory is far fewer.
+    //for exceptionally big problems (7x7+), call stack size may need to be increased.
+    getBoardHeapEfficient(clues: number[]) {
+        this.startTime = new Date().getTime();
+        this.rules = clues;
+        this.numbBuildings = clues.length/4;
+        this.permutationBuilder = new Perms();
+
+        let empty2dArray = Grid.getBlankGrid(this.numbBuildings);
+        let possibleNumbers: Set<number>[][] = this.createPossibleNumbers(this.numbBuildings);
+
+        let startGrid = new Grid(empty2dArray, possibleNumbers);
+        this.addDefinites(startGrid);
+        startGrid.fillInBlanks(); //fillInBlanks will check for negatives. i.e. will add a number it's the only square in it's row or col that can have that number
+        this.addRow(startGrid);
+        return this.solution;
+    }
+
+    addRow(g: Grid) {
+        if (this.solution) {
+            return;
+        }
+
+        let indexes = g.getBestRows(this.rules);
+        let perms = indexes.map(x => {
+            let {row, possibleNumbs} = g.getRow(x.index);
+            let clue = this.rules[x.index];
+            let oppositeClue = this.rules[Solver.getOppositeClueIndex(x.index, this.numbBuildings)];
+            let permutations = this.permutationBuilder.getPerms(row, possibleNumbs, {left: clue, right: oppositeClue});
+            return {index: x.index, perms: permutations, score: x.score}
+        }).sort((a,b) => a.perms.length-b.perms.length);
+
+        let selectedPerms = perms[0].perms;
+        for (let i = 0; i<selectedPerms.length; i++) {
+            let sol = selectedPerms[i];
+            let newGrid = g.copy();
+            newGrid.saveRow(sol.row, perms[0].index);
+            newGrid.fillInBlanks();
+            let completed = newGrid.isComplete();
+            if (completed && newGrid.matchesClues(this.rules) && newGrid.noDuplicateNumbers()) {
+                this.solution = newGrid;
+            } else if (!completed) {
+                this.addRow(newGrid)
+            }
+        }
     }
 
 
@@ -158,23 +208,8 @@ export class Solver {
     }
 }
 
-// let clues = [ 3, 2, 2, 3, 2, 1,
-//     1, 2, 3, 3, 2, 2,
-//     5, 1, 2, 2, 4, 3,
-//     3, 2, 1, 2, 2, 4];
 
-// let clues = [ 0, 3, 0, 5, 3, 4,
-//     0, 0, 0, 0, 0, 1,
-//     0, 3, 0, 3, 2, 3,
-//     3, 2, 0, 3, 1, 0];
-
-
-
-// let clues = [ 0, 3, 0, 4, 3,
-//     0, 2, 0, 1, 2,
-//     0, 0, 0, 0, 0,
-//     3, 2, 0, 3, 0,];
-
+//4x4
 // let clues = [
 //     0,0,1,2,
 //     0,2,0,0,
@@ -182,12 +217,46 @@ export class Solver {
 //     4,1,0,0
 // ]
 
-// let clues = [0,2,3,0,2,0,0,0, 5,0,4,5,0,4,0,0, 0,4,2,0,0,0,6,0, 5,2,2,2,2,4,1,0];
+//5x5
+// let clues = [ 0, 3, 0, 4, 3,
+//     0, 2, 0, 1, 2,
+//     0, 0, 0, 0, 0,
+//     3, 2, 0, 3, 0,];
 
-// let clues = [3,0,3,3,2,3,0,3,4,3,0,1,5,0,3,0,0,0,2,0,2,3,4,0,0,3,4,2,0,0,0,0];
-let clues = [1,3,5,3,4,3,2,2,2,2,1,3,3,2,5,4,3,5,2,2,3,1,2,6,3,2,4,3,2,2,4,1];
 
-//
-let sol = new Solver()
-sol.getBoard(clues).forEach(x => x.printGrid());
-console.log((new Date().getTime() - sol.startTime)/1000);
+//6x6
+// let clues = [ 0, 3, 0, 5, 3, 4,
+//     0, 0, 0, 0, 0, 1,
+//     0, 3, 0, 3, 2, 3,
+//     3, 2, 0, 3, 1, 0];
+
+
+//8x8
+//<1s
+// let clues = [3,0,3,3,2,3,0,3,
+//             4,3,0,1,5,0,3,0,
+//             0,0,2,0,2,3,4,0,
+//             0,3,4,2,0,0,0,0];
+
+
+//8x8
+//2mins
+// let clues = [3,2,4,3,2,1,3,3,
+//     3,3,1,3,4,2,2,4,
+//     3,2,4,2,3,2,5,1,
+//     1,3,2,3,3,3,2,3];
+
+
+//8x8
+//max heap size reached.
+//using stack method solves in 0.4s
+// let clues = [1,3,5,3,4,3,2,2,
+//             2,2,1,3,3,2,5,4,
+//             3,5,2,2,3,1,2,6,
+//             3,2,4,3,2,2,4,1];
+
+
+// let sol = new Solver();
+// sol.getBoardHeapEfficient(clues).printGrid();
+// sol.getBoard(clues).forEach(x => x.printGrid());
+// console.log((new Date().getTime() - sol.startTime)/1000);
