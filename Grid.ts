@@ -1,6 +1,6 @@
-import {solver} from "./Solver";
+import {Solver} from "./Solver";
 
-export class grid {
+export class Grid {
     private grid: number[][];
     private rows: number;
     private possibleNumbers: Set<number>[][];
@@ -178,7 +178,7 @@ export class grid {
         let best = [{index: -1, score: 99}];
         for (let i = 0; i < clues.length/2; i++) {
                 let clue = clues[i];
-                let oppClueIdx = solver.getOppositeClueIndex(i, this.rows);
+                let oppClueIdx = Solver.getOppositeClueIndex(i, this.rows);
                 let oppositeClue = clues[oppClueIdx];
                 let possNumbsForRow = this.getRow(i).possibleNumbs;
                 let spaces = possNumbsForRow.reduce((t,c) => c.size > 0 ? t+1 : t, 0);
@@ -252,11 +252,11 @@ export class grid {
         return true;
     }
 
-    copy(): grid {
+    copy(): Grid {
         let numbs = this.grid.slice();
         numbs = numbs.map(x => x.slice());
         let possibleNumbers = this.copyPossibleNumbers();
-        let newGrid = new grid(numbs, possibleNumbers);
+        let newGrid = new Grid(numbs, possibleNumbers);
         return newGrid;
     }
 

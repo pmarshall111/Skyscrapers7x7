@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Solver_1 = require("./Solver");
-class grid {
+class Grid {
     constructor(grid, possibleNumbers) {
         this.grid = grid;
         this.rows = grid.length;
@@ -169,7 +169,7 @@ class grid {
         let best = [{ index: -1, score: 99 }];
         for (let i = 0; i < clues.length / 2; i++) {
             let clue = clues[i];
-            let oppClueIdx = Solver_1.solver.getOppositeClueIndex(i, this.rows);
+            let oppClueIdx = Solver_1.Solver.getOppositeClueIndex(i, this.rows);
             let oppositeClue = clues[oppClueIdx];
             let possNumbsForRow = this.getRow(i).possibleNumbs;
             let spaces = possNumbsForRow.reduce((t, c) => c.size > 0 ? t + 1 : t, 0);
@@ -245,7 +245,7 @@ class grid {
         let numbs = this.grid.slice();
         numbs = numbs.map(x => x.slice());
         let possibleNumbers = this.copyPossibleNumbers();
-        let newGrid = new grid(numbs, possibleNumbers);
+        let newGrid = new Grid(numbs, possibleNumbers);
         return newGrid;
     }
     copyPossibleNumbers() {
@@ -263,5 +263,5 @@ class grid {
         console.log(this.grid);
     }
 }
-exports.grid = grid;
+exports.Grid = Grid;
 //# sourceMappingURL=Grid.js.map
